@@ -19,19 +19,22 @@ app.config(function ($routeProvider) {
     })
 });
 
-app.service("GroceryService", function () {
+app.service("GroceryService", function ($http) {
     var groceryService = {};
     
-    groceryService.groceryItems = [
-        {id: 1, completed: true, itemName: 'milk', date: new Date("October 1, 2014 11:13:00")},
-        {id: 2, completed: true, itemName: 'cookies', date: new Date("October 1, 2014 11:13:00")},
-        {id: 3, completed: true, itemName: 'ice cream', date: new Date("October 1, 2014 11:13:00")},
-        {id: 4, completed: true, itemName: 'potatoes', date: new Date("October 2, 2014 11:13:00")},
-        {id: 5, completed: true, itemName: 'cereal', date: new Date("October 3, 2014 11:13:00")},
-        {id: 6, completed: true, itemName: 'bread', date: new Date("October 3, 2014 11:13:00")},
-        {id: 7, completed: true, itemName: 'eggs', date: new Date("October 4, 2014 11:13:00")},
-        {id: 8, completed: true, itemName: 'tortillas', date: new Date("October 5, 2014 11:13:00")},
-    ];
+    groceryService.groceryItems = [];
+
+    $http.get("data/server_data.json")
+        .then(function (response) {
+            groceryService.groceryItems = response.data;
+
+            for (var item in groceryService.groceryItems)
+            {
+                groceryService.groceryItems[item].date = new Date(groceryService.groceryItems[item].date);
+            }
+        }, function (data, status) {
+            alert("Things whent wrong");
+        });
 
     groceryService.findById = function (id) {
         for(var item in groceryService.groceryItems) {
@@ -56,18 +59,42 @@ app.service("GroceryService", function () {
     };
 
     groceryService.removeItem = function (entry) {
+        // $http.post("", entry, function (res) {
+        //     if (res.data.status) {
+        //         var index = groceryService.groceryItems.indexOf(entry);
+        //         groceryService.groceryItems.splice(index, 1);
+        //     }
+        // }, function (err) {
+        //  
+        // });
+
         var index = groceryService.groceryItems.indexOf(entry);
         groceryService.groceryItems.splice(index, 1);
     };
 
     groceryService.save = function (entry) {
         var updateItem = groceryService.findById(entry.id);
-        debugger;
+
         if (updateItem) {
+            // $http.post("url", entry, function (res) {
+            //     if (res.data.status) {
+            //         updateItem.completed = entry.completedl
+            //         updateItem.itemName = entry.itemName
+            //         updateItem.date = entry.date
+            //     }
+            // }, function (err) {
+
+            // });
+
             updateItem.completed = entry.completedl
             updateItem.itemName = entry.itemName
             updateItem.date = entry.date
         } else {
+            // $http.post("data/add_data.json", entry, function (response){
+            //     // entry.id = response.data.newId;
+            // }, function (err) {
+
+            // })
             entry.id = groceryService.getNewId();
             groceryService.groceryItems.push(entry);
         }
@@ -81,11 +108,15 @@ app.controller("HomeController", ["$scope", "GroceryService", function ($scope, 
 
     $scope.removeItem = function (entry) {
         GroceryService.removeItem(entry);
-    }
+    };
 
     $scope.markCompleted = function (entry) {
         GroceryService.markCompleted(entry);
-    }
+    };
+
+    $scope.$watch(function () { return GroceryService.groceryItems; }, function (groceryItems){
+        $scope.groceryItems = groceryItems;
+    });
 }]);
 
 app.controller("GroceryListItemController", ["$scope", "$routeParams", "$location", "GroceryService", 
